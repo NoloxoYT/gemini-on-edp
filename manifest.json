@@ -11,9 +11,6 @@
     "https://api.gemini.com/*",
     "https://*/*"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
   "content_scripts": [
     {
       "matches": ["https://*/ecole-directe.plus/*"],
