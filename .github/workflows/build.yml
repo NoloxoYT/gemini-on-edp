@@ -1,0 +1,52 @@
+name: Build Chrome Extension
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install CRX packager
+        run: npm install -g crx
+
+      - name: Recreate PEM file from secret
+        run: |
+          echo ${{ secrets.EXTENSION_PEM_BASE64 }} | base64 --decode > extension.pem
+
+      - name: Auto-bump version in manifest.json
+        run: |
+          node -e "
+          const fs = require('fs');
+          const manifest = JSON.parse(fs.readFileSync('manifest.json'));
+          const parts = manifest.version.split('.');
+          parts[2] = (parseInt(parts[2]) + 1).toString();
+          manifest.version = parts.join('.');
+          fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
+          console.log('Bumped version to', manifest.version);
+          "
+
+      - name: Zip Extension
+        run: |
+          mkdir -p dist
+          zip -r dist/mon_extension.zip * -x "*.github/*" "*.pem"
+
+      - name: Build CRX
+        run: crx pack ./ -o dist/mon_extension.crx -p extension.pem
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: chrome-extension
+          path: dist/
