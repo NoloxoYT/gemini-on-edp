@@ -2,19 +2,20 @@
   "manifest_version": 3,
   "name": "Gemini x EDP",
   "version": "1.0",
+  "description": "Assistant IA pour les devoirs scolaires",
   "permissions": [
     "storage",
-    "scripting",
-    "tabs"
+    "activeTab"
   ],
   "host_permissions": [
-    "https://api.gemini.com/*",
-    "https://*/*"
+    "<all_urls>"
   ],
   "content_scripts": [
     {
-      "matches": ["https://*/ecole-directe.plus/*"],
-      "js": ["content.js"]
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
   "action": {
