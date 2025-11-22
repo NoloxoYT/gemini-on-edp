@@ -22,10 +22,10 @@ jobs:
         run: npm install -g crx
 
       - name: Recreate PEM file from secret
-        run: |
-          echo ${{ secrets.EXTENSION_PEM_BASE64 }} | base64 --decode > extension.pem
+        run: echo ${{ secrets.EXTENSION_PEM_BASE64 }} | base64 --decode > extension.pem
 
       - name: Auto-bump version in manifest.json
+        id: bump_version
         run: |
           node -e "
           const fs = require('fs');
@@ -34,14 +34,11 @@ jobs:
           parts[2] = (parseInt(parts[2]) + 1).toString();
           manifest.version = parts.join('.');
           fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
-          console.log('Bumped version to', manifest.version);
-          process.exit(0);
+          console.log('::set-output name=version::' + manifest.version);
           "
 
       - name: Zip Extension
-        run: |
-          mkdir -p dist
-          zip -r dist/mon_extension.zip * -x "*.github/*" "*.pem"
+        run: zip -r dist/mon_extension.zip * -x "*.github/*" "*.pem"
 
       - name: Build CRX
         run: crx pack ./ -o dist/mon_extension.crx -p extension.pem
@@ -49,30 +46,30 @@ jobs:
       - name: Create Release
         id: create_release
         uses: actions/create-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.bump_version.outputs.version }}
           release_name: Chrome Extension v${{ steps.bump_version.outputs.version }}
           draft: false
           prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload ZIP to Release
         uses: actions/upload-release-asset@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/mon_extension.zip
           asset_name: mon_extension.zip
           asset_content_type: application/zip
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload CRX to Release
         uses: actions/upload-release-asset@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/mon_extension.crx
           asset_name: mon_extension.crx
           asset_content_type: application/octet-stream
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
