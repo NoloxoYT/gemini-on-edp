@@ -1,4 +1,4 @@
-name: Build Chrome Extension
+name: Build and Release Chrome Extension
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
@@ -35,6 +35,7 @@ jobs:
           manifest.version = parts.join('.');
           fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
           console.log('Bumped version to', manifest.version);
+          process.exit(0);
           "
 
       - name: Zip Extension
@@ -45,8 +46,33 @@ jobs:
       - name: Build CRX
         run: crx pack ./ -o dist/mon_extension.crx -p extension.pem
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v2
         with:
-          name: chrome-extension
-          path: dist/
+          tag_name: v${{ steps.bump_version.outputs.version }}
+          release_name: Chrome Extension v${{ steps.bump_version.outputs.version }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to Release
+        uses: actions/upload-release-asset@v2
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/mon_extension.zip
+          asset_name: mon_extension.zip
+          asset_content_type: application/zip
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload CRX to Release
+        uses: actions/upload-release-asset@v2
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/mon_extension.crx
+          asset_name: mon_extension.crx
+          asset_content_type: application/octet-stream
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
