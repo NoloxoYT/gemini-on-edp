@@ -24,20 +24,21 @@ jobs:
       - name: Recreate PEM file from secret
         run: echo "${{ secrets.EXTENSION_PEM_BASE64 }}" | base64 --decode > extension.pem
 
-      - name: Auto-bump version in manifest.json
-        id: bump_version
-        run: |
-          #!/usr/bin/env node
-          const fs = require('fs');
-          const manifestPath = 'manifest.json';
-          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-          const parts = manifest.version.split('.');
-          parts[2] = (Number(parts[2]) + 1).toString();
-          manifest.version = parts.join('.');
-          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-          // output pour GitHub Actions
-          console.log(`version=${manifest.version}`); // debug pour log
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${manifest.version}\n`);
+      name: Auto-bump version in manifest.json
+  id: bump_version
+  run: |
+    node <<'EOF'
+    const fs = require('fs');
+    const manifestPath = 'manifest.json';
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    const parts = manifest.version.split('.');
+    parts[2] = (Number(parts[2]) + 1).toString();
+    manifest.version = parts.join('.');
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    // output pour GitHub Actions
+    console.log(`version=${manifest.version}`); // debug pour log
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${manifest.version}\n`);
+    EOF
 
       - name: Zip Extension
         run: |
