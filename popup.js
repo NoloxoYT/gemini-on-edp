@@ -1,4 +1,3 @@
-// Charger les valeurs sauvegardées au démarrage
 chrome.storage.local.get(['apiKey', 'provider'], (result) => {
     if (result.apiKey) {
         document.getElementById('apiKey').value = result.apiKey;
