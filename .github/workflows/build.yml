@@ -48,7 +48,7 @@ jobs:
           zip -r dist/Gemini_on_EDP.zip . -x ".github/*" "*.pem" "dist/*" "node_modules/*"
 
       - name: Build CRX
-        run: crx pack ./ -o dist/Gemini_onEDP.crx -p extension.pem
+        run: crx pack ./ -o dist/Gemini_on_EDP.crx -p extension.pem
 
       - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v1
