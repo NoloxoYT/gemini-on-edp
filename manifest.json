@@ -8,8 +8,14 @@
     "activeTab"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.openai.com/*",
+    "https://api.groq.com/*",
+    "https://api.mistral.ai/*"
   ],
+    "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [ 

@@ -1,58 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <style>
-        body {
-            width: 300px;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-        }
-        h2 {
-            color: #4F46E5;
-            margin-top: 0;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #4F46E5;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background: #4338CA;
-        }
-        .info {
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
-        }
-        .shortcut {
-            background: #F3F4F6;
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 15px;
-            font-size: 12px;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="styles.css" rel="stylesheet">
+    <title>AI on EDP</title>
 </head>
 <body>
-    <h2>🎓 Assistant Devoirs IA</h2>
+    <h2>AI on EDP</h2>
     
-    <label for="apiKey">Clé API Gemini :</label>
-    <input type="password" id="apiKey" placeholder="Colle ta clé API ici">
-    
-    <button id="saveBtn">💾 Sauvegarder</button>
+    <form id="configForm">
+        <label for="sAPI">Fournisseur :</label>
+        <select id="sAPI">
+            <option value="Gemini">Gemini</option>
+            <option value="OpenAI">OpenAI</option>
+            <option value="Groq">Groq</option>
+            <option value="Mistral">Mistral</option>
+        </select>
+        
+        <br><br>
+        
+        <label for="apiKey">Clé API :</label>
+        <input type="password" id="apiKey" placeholder="Entrez votre clé API" autocomplete="off">
+        
+        <br><br>
+        
+        <button type="button" id="saveBtn">Sauvegarder</button>
+    </form>
     
     <div class="info">
         Obtiens une clé gratuite sur :<br>
@@ -61,7 +35,7 @@
     
     <div class="shortcut">
         <strong>⌨️ Raccourci :</strong><br>
-        Appuie sur <strong>Ctrl + Shift + y</strong>
+        Appuie sur <strong>Ctrl + Shift + Y</strong>
     </div>
     
     <script src="popup.js"></script>

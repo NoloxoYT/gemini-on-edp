@@ -1,4 +1,3 @@
-
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initExtension);
 } else {
@@ -6,7 +5,6 @@ if (document.readyState === 'loading') {
 }
 
 function initExtension() {
-    console.log('Extension Gemini x EDP chargée !');
     setTimeout(() => {
         createButton();
         setupKeyboardShortcut();
@@ -14,6 +12,7 @@ function initExtension() {
 }
 
 let isProcessing = false;
+
 function createButton() {
     if (document.getElementById('gemini-assistant-btn')) return;
     
@@ -26,11 +25,13 @@ function createButton() {
         right: 20px !important;
         z-index: 2147483647 !important;
         padding: 15px 25px !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 50px !important;
         font-size: 16px !important;
         font-weight: bold !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
         transition: all 0.3s ease !important;
     `;
     
@@ -45,9 +46,7 @@ function createButton() {
     btn.onclick = () => startAssistant();
     
     document.body.appendChild(btn);
-    console.log('✅ Bouton créé !');
-    
-    // Observer pour recréer si supprimé
+
     const observer = new MutationObserver(() => {
         if (!document.getElementById('gemini-assistant-btn')) {
             createButton();
@@ -55,7 +54,6 @@ function createButton() {
     });
     observer.observe(document.body, { childList: true, subtree: true });
 }
-
 
 function setupKeyboardShortcut() {
     document.addEventListener('keydown', (e) => {
@@ -66,21 +64,21 @@ function setupKeyboardShortcut() {
     });
 }
 
-// Fonction principale
 async function startAssistant() {
-    if (isProcessing) {
-        alert('...');
-        return;
-    }
+    if (isProcessing) return;
 
-    const { apiKey } = await chrome.storage.sync.get(['apiKey']);
+    const { apiKey, provider } = await chrome.storage.local.get(['apiKey', 'provider']);
+    
     if (!apiKey || apiKey.length < 10) {
-        alert('⚠️ Configure d\'abord ta clé API Gemini !\n\nClique sur l\'icône de l\'extension en haut à droite.');
+        alert('Configure d’abord ta clé API.');
         return;
     }
-    const API_KEY = apiKey;
+    
+    if (!provider) {
+        alert('Sélectionne un fournisseur d’API.');
+        return;
+    }
 
-    // Extraction des devoirs
     function extractHomeworks() {
         const tasks = document.querySelectorAll('.detailed-task');
         const homeworks = [];
@@ -104,64 +102,49 @@ async function startAssistant() {
         return homeworks;
     }
 
-    // Appel API Gemini avec retry
-    async function askGemini(hw, retries = 2) {
-        const prompt = `Explique mon devoir :
+    async function askAI(hw, retries = 2) {
+    const prompt = `Explique mon devoir :
 Matière : ${hw.subject}
 Devoir : ${hw.content}
-Donne une réponse structurée avec :
- Explication du devoir a faire
- Conseils méthodologiques
- Des Liens fiables
- Points clés à retenir
-Utilise du markdown.
-Nutilise pas d'emojis`;
 
-        for (let attempt = 0; attempt <= retries; attempt++) {
-            try {
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-goog-api-key': API_KEY
-                        },
-                        body: JSON.stringify({ 
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: {
-                                temperature: 0.1,
-                                maxOutputTokens: 7000
-                            }
-                        })
-                    }
-                );
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-                }
-                
-                const data = await response.json();
-                return data?.candidates?.[0]?.content?.parts?.[0]?.text || '❌ Aucune réponse';
-                
-            } catch (err) {
-                console.error(`Tentative ${attempt + 1}/${retries + 1} échouée:`, err);
-                if (attempt === retries) {
-                    return `❌ Erreur : ${err.message}`;
-                }
-                await new Promise(r => setTimeout(r, 1000));
+Donne une réponse structurée :
+- Explication
+- Méthodo
+- Liens fiables
+- Points clés
+Utilise du markdown, sans emojis.`;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const response = await chrome.runtime.sendMessage({
+                action: 'callAPI',
+                provider: provider,
+                apiKey: apiKey,
+                prompt: prompt
+            });
+
+            if (response.success) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
             }
+            
+        } catch (err) {
+            console.error(`Tentative ${attempt + 1}/${retries + 1} échouée:`, err);
+            if (attempt === retries) {
+                return `Erreur : ${err.message}`;
+            }
+            await new Promise(r => setTimeout(r, 1000));
         }
     }
+}
 
-    // Injection dans le DOM
     function injectAnswer(taskElement, hw, answer) {
-        let container = taskElement.querySelector('.gemini-answer');
+        let container = taskElement.querySelector('.ai-answer');
         
         if (!container) {
             container = document.createElement('div');
-            container.className = 'gemini-answer';
+            container.className = 'ai-answer';
             container.style.cssText = `
                 border-radius: 1em;
                 background-color: #44445e;
@@ -174,47 +157,41 @@ Nutilise pas d'emojis`;
             taskElement.appendChild(container);
         }
         
-        // Convertir markdown en HTML
         let formattedAnswer = answer
-            .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #fdfdff" "font-weigth: 700">$1</strong>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/^### (.*$)/gim, '<h3 style="color:#667eea;margin:10px 0 5px 0;">$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2 style="color:#667eea;margin:10px 0 5px 0;">$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1 style="color:#667eea;margin:10px 0 5px 0;">$1</h1>')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
             .replace(/\n/g, '<br>');
-        
+            
         container.innerHTML = `
-            <div style="display:flex;align-items:center;margin-bottom:10px;">
-                <span style="font-size:24px;margin-right:10px;"></span>
-                <strong style="color:#667eea;font-size:16px;">Aide IA - ${hw.subject}</strong>
-            </div>
-            <div style="color:#fdfdff;font-size:14px;">${formattedAnswer}</div>
-            <button class="gemini-copy-btn" style="
-                background-color: 50%;
+            <strong>Aide IA (${provider}) - ${hw.subject}</strong>
+            <div>${formattedAnswer}</div>
+            <button class="ai-copy-btn" style="
+                background-color: #667eea;
                 margin-top: 10px;
                 padding: 8px 15px;
-                color: #a8a8e3;
+                color: white;
                 border: none;
                 border-radius: 5px;
-                cursor:pointer;
-                font-size: 12px;
+                cursor: pointer;
             ">Copier</button>
         `;
         
-        const copyBtn = container.querySelector('.gemini-copy-btn');
+        const copyBtn = container.querySelector('.ai-copy-btn');
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(answer);
-            copyBtn.textContent = 'Copié !';
+            copyBtn.textContent = 'Copié';
             setTimeout(() => copyBtn.textContent = 'Copier', 2000);
         };
     }
-
-    // Loader
+        
     function showLoader(taskElement, hw) {
-        let loader = taskElement.querySelector('.gemini-loader');
+        let loader = taskElement.querySelector('.ai-loader');
         if (!loader) {
             loader = document.createElement('div');
-            loader.className = 'gemini-loader';
+            loader.className = 'ai-loader';
             loader.style.cssText = `
                 margin-top: 10px;
                 padding: 10px;
@@ -230,11 +207,10 @@ Nutilise pas d'emojis`;
     }
 
     function removeLoader(taskElement) {
-        const loader = taskElement.querySelector('.gemini-loader');
+        const loader = taskElement.querySelector('.ai-loader');
         if (loader) loader.remove();
     }
 
-    // Exécution
     isProcessing = true;
     const btn = document.getElementById('gemini-assistant-btn');
     if (btn) {
@@ -245,7 +221,7 @@ Nutilise pas d'emojis`;
     const homeworks = extractHomeworks();
     
     if (homeworks.length === 0) {
-        alert('❌ Aucun devoir trouvé sur cette page.');
+        alert('Aucun devoir trouvé.');
         isProcessing = false;
         if (btn) {
             btn.style.opacity = '1';
@@ -257,7 +233,7 @@ Nutilise pas d'emojis`;
     const todoHomeworks = homeworks.filter(hw => !hw.isCompleted);
     
     if (todoHomeworks.length === 0) {
-        alert('🎉 Tous tes devoirs sont déjà faits !');
+        alert('Tous les devoirs sont déjà faits.');
         isProcessing = false;
         if (btn) {
             btn.style.opacity = '1';
@@ -266,11 +242,9 @@ Nutilise pas d'emojis`;
         return;
     }
     
-    console.log(`🚀 Traitement de ${todoHomeworks.length} devoir(s)...`);
-    
     for (const hw of todoHomeworks) {
-        const loader = showLoader(hw.taskElement, hw);
-        const answer = await askGemini(hw);
+        showLoader(hw.taskElement, hw);
+        const answer = await askAI(hw);
         removeLoader(hw.taskElement);
         injectAnswer(hw.taskElement, hw, answer);
     }
