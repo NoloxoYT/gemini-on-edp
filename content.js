@@ -6,7 +6,7 @@ if (document.readyState === 'loading') {
 }
 
 function initExtension() {
-    console.log('🎓 Extension Gemini x EDP chargée !');
+    console.log('Extension Gemini x EDP chargée !');
     setTimeout(() => {
         createButton();
         setupKeyboardShortcut();
@@ -14,28 +14,23 @@ function initExtension() {
 }
 
 let isProcessing = false;
-
-// Créer le bouton flottant
 function createButton() {
     if (document.getElementById('gemini-assistant-btn')) return;
     
     const btn = document.createElement('button');
     btn.id = 'gemini-assistant-btn';
-    btn.innerHTML = '🎓 Assistant IA';
+    btn.innerHTML = 'Assistant IA';
     btn.style.cssText = `
         position: fixed !important;
         bottom: 20px !important;
         right: 20px !important;
         z-index: 2147483647 !important;
         padding: 15px 25px !important;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 50px !important;
         font-size: 16px !important;
         font-weight: bold !important;
-        cursor: pointer !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
         transition: all 0.3s ease !important;
     `;
     
@@ -74,12 +69,12 @@ function setupKeyboardShortcut() {
 // Fonction principale
 async function startAssistant() {
     if (isProcessing) {
-        alert('⏳ Traitement en cours, patiente...');
+        alert('...');
         return;
     }
 
     const { apiKey } = await chrome.storage.sync.get(['apiKey']);
-    if (!apiKey || apiKey.length < 20) {
+    if (!apiKey || apiKey.length < 10) {
         alert('⚠️ Configure d\'abord ta clé API Gemini !\n\nClique sur l\'icône de l\'extension en haut à droite.');
         return;
     }
@@ -120,7 +115,7 @@ Donne une réponse structurée avec :
  Des Liens fiables
  Points clés à retenir
 Utilise du markdown.
-Nutilise pas d`;
+Nutilise pas d'emojis`;
 
         for (let attempt = 0; attempt <= retries; attempt++) {
             try {
@@ -168,13 +163,12 @@ Nutilise pas d`;
             container = document.createElement('div');
             container.className = 'gemini-answer';
             container.style.cssText = `
+                border-radius: 1em;
+                background-color: #44445e;
                 margin-top: 15px !important;
                 padding: 15px !important;
-                border: 2px solid #667eea !important;
-                border-radius: 10px !important;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
                 font-family: Arial, sans-serif !important;
+                color: #fdfdff;
                 line-height: 1.6 !important;
             `;
             taskElement.appendChild(container);
@@ -182,7 +176,7 @@ Nutilise pas d`;
         
         // Convertir markdown en HTML
         let formattedAnswer = answer
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #fdfdff" "font-weigth: 700">$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/^### (.*$)/gim, '<h3 style="color:#667eea;margin:10px 0 5px 0;">$1</h3>')
             .replace(/^## (.*$)/gim, '<h2 style="color:#667eea;margin:10px 0 5px 0;">$1</h2>')
@@ -191,27 +185,27 @@ Nutilise pas d`;
         
         container.innerHTML = `
             <div style="display:flex;align-items:center;margin-bottom:10px;">
-                <span style="font-size:24px;margin-right:10px;">🤖</span>
+                <span style="font-size:24px;margin-right:10px;"></span>
                 <strong style="color:#667eea;font-size:16px;">Aide IA - ${hw.subject}</strong>
             </div>
-            <div style="color:#333;font-size:14px;">${formattedAnswer}</div>
+            <div style="color:#fdfdff;font-size:14px;">${formattedAnswer}</div>
             <button class="gemini-copy-btn" style="
-                margin-top:10px;
-                padding:8px 15px;
-                background:#667eea;
-                color:white;
-                border:none;
-                border-radius:5px;
+                background-color: 50%;
+                margin-top: 10px;
+                padding: 8px 15px;
+                color: #a8a8e3;
+                border: none;
+                border-radius: 5px;
                 cursor:pointer;
-                font-size:12px;
-            ">📋 Copier</button>
+                font-size: 12px;
+            ">Copier</button>
         `;
         
         const copyBtn = container.querySelector('.gemini-copy-btn');
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(answer);
-            copyBtn.textContent = '✅ Copié !';
-            setTimeout(() => copyBtn.textContent = '📋 Copier', 2000);
+            copyBtn.textContent = 'Copié !';
+            setTimeout(() => copyBtn.textContent = 'Copier', 2000);
         };
     }
 
@@ -224,14 +218,14 @@ Nutilise pas d`;
             loader.style.cssText = `
                 margin-top: 10px;
                 padding: 10px;
-                background: #f0f0f0;
+                background: #44445e;
                 border-radius: 5px;
                 text-align: center;
-                color: #666;
+                color: #a8a8e3;
             `;
             taskElement.appendChild(loader);
         }
-        loader.innerHTML = `🤖 Analyse de ${hw.subject}... ⏳`;
+        loader.innerHTML = `Analyse de ${hw.subject}...`;
         return loader;
     }
 
