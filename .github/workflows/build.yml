@@ -27,18 +27,18 @@ jobs:
       - name: Auto-bump version in manifest.json
         id: bump_version
         run: |
-        node <<'EOF'
-        const fs = require('fs');
-        const manifestPath = 'manifest.json';
-        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-        const parts = manifest.version.split('.');
-        while (parts.length < 3) parts.push('0'); // always MAJOR.MINOR.PATCH
-        parts[2] = (Number(parts[2]) + 1).toString();
-        manifest.version = parts.join('.');
-        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-        console.log(`version=${manifest.version}`);
-        fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${manifest.version}\n`);
-        EOF
+          node <<'EOF'
+          const fs = require('fs');
+          const manifestPath = 'manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+          const parts = manifest.version.split('.');
+          while (parts.length < 3) parts.push('0'); // always MAJOR.MINOR.PATCH
+          parts[2] = (Number(parts[2]) + 1).toString();
+          manifest.version = parts.join('.');
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+          console.log(`version=${manifest.version}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${manifest.version}\n`);
+          EOF
 
       - name: Zip Extension
         run: |
