@@ -45,10 +45,10 @@ jobs:
       - name: Zip Extension
         run: |
           mkdir -p dist
-          zip -r dist/mon_extension.zip . -x ".github/*" "*.pem" "dist/*" "node_modules/*"
+          zip -r dist/Gemini_on_EDP.zip . -x ".github/*" "*.pem" "dist/*" "node_modules/*"
 
       - name: Build CRX
-        run: crx pack ./ -o dist/mon_extension.crx -p extension.pem
+        run: crx pack ./ -o dist/Gemini_onEDP.crx -p extension.pem
 
       - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v1
