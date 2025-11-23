@@ -57,7 +57,7 @@ jobs:
           name: Chrome Extension v${{ steps.bump_version.outputs.version }}
           body: "Release automatique via CI"
           files: |
-            dist/mon_extension.zip
-            dist/mon_extension.crx
+            dist/Gemini_on_EDP.zip
+            dist/Gemini_on_EDP.crx
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
