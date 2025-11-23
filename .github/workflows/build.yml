@@ -1,4 +1,4 @@
-name: Build Chrome Extension
+name: Build and Release Chrome Extension
 
 on:
   push:
@@ -6,8 +6,10 @@ on:
       - main
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -16,37 +18,46 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: '20'
 
       - name: Install CRX packager
         run: npm install -g crx
 
       - name: Recreate PEM file from secret
-        run: |
-          echo ${{ secrets.EXTENSION_PEM_BASE64 }} | base64 --decode > extension.pem
+        run: echo "${{ secrets.EXTENSION_PEM_BASE64 }}" | base64 --decode > extension.pem
 
       - name: Auto-bump version in manifest.json
+        id: bump_version
         run: |
-          node -e "
+          node <<'EOF'
           const fs = require('fs');
-          const manifest = JSON.parse(fs.readFileSync('manifest.json'));
+          const manifestPath = 'manifest.json';
+          const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
           const parts = manifest.version.split('.');
-          parts[2] = (parseInt(parts[2]) + 1).toString();
+          while (parts.length < 3) parts.push('0'); // always MAJOR.MINOR.PATCH
+          parts[2] = (Number(parts[2]) + 1).toString();
           manifest.version = parts.join('.');
-          fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
-          console.log('Bumped version to', manifest.version);
-          "
+          fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+          console.log(`version=${manifest.version}`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${manifest.version}\n`);
+          EOF
 
       - name: Zip Extension
         run: |
           mkdir -p dist
-          zip -r dist/mon_extension.zip * -x "*.github/*" "*.pem"
+          zip -r dist/Gemini_on_EDP.zip . -x ".github/*" "*.pem" "dist/*" "node_modules/*"
 
       - name: Build CRX
-        run: crx pack ./ -o dist/mon_extension.crx -p extension.pem
+        run: crx pack ./ -o dist/Gemini_on_EDP.crx -p extension.pem
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v1
         with:
-          name: chrome-extension
-          path: dist/
+          tag_name: v${{ steps.bump_version.outputs.version }}
+          name: Chrome Extension v${{ steps.bump_version.outputs.version }}
+          body: "Release automatique via CI"
+          files: |
+            dist/Gemini_on_EDP.zip
+            dist/Gemini_on_EDP.crx
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
